@@ -16,7 +16,7 @@ class: middle, center
 1. What are key pairs
 2. Why it's secure
 3. What kind of keys is EOS using
-4. How-tos
+4. Signature
 5. Conclusion
 
 ---
@@ -24,24 +24,112 @@ class: middle, center
 # What are Key Pairs?
 
 {% highlight bash %}
-5J3Aa7Z98cZn9Rjy4aEaYUsN2EmYveLvh4YgCHCvvNB6EYJ94PA
-EOS7HZtQrJuKTDF79jmHwSqVT7ff5eZxXmzfSZ91ndS7XW1JwBUkb
+Private Key: 5J3Aa7Z98cZn9Rjy4aEaYUsN2EmYveLvh4YgCHCvvNB6EYJ94PA
+Public Key:  EOS7HZtQrJuKTDF79jmHwSqVT7ff5eZxXmzfSZ91ndS7XW1JwBUkb
 {% endhighlight %}
+
+EOS key pairs are generated from elliptic curves.
 
 ---
 
 # What are Key Pairs?
 
-{% highlight bash %}
-5J3Aa7Z98cZn9Rjy4aEaYUsN2EmYveLvh4YgCHCvvNB6EYJ94PA
-EOS7HZtQrJuKTDF79jmHwSqVT7ff5eZxXmzfSZ91ndS7XW1JwBUkb
-{% endhighlight %}
+## Elliptic Curves Cryptography (ECC)
+
+y<sup>2</sup> = x<sup>3</sup> + ax + b
 
 ---
 
-# What are Key Pairs?
+# Why It's Secure?
 
-{% highlight bash %}
-5J3Aa7Z98cZn9Rjy4aEaYUsN2EmYveLvh4YgCHCvvNB6EYJ94PA
-EOS7HZtQrJuKTDF79jmHwSqVT7ff5eZxXmzfSZ91ndS7XW1JwBUkb
-{% endhighlight %}
+If your private key is generated from a simple character, like `q`...
+
+... or from a data stream like `10`
+
+[NIST](https://en.wikipedia.org/wiki/National_Institute_of_Standards_and_Technology) and [ANSI X9](https://en.wikipedia.org/wiki/ASC_X9) set the minimum key size standard. RSA and DSA is 1024, ECC is 160.
+
+---
+
+# Why It's Secure?
+
+## secp256k1 vs. secp256r1
+
+Bitcoin uses secp256k1.
+
+Satoshi said secp256k1 is secure for at least 5-10 years, unless there's a breakthrough.
+
+But NIST made secp256r1 a standard curve.(Honeypot?) 
+
+---
+
+# Why It's Secure?
+
+## Dual_EC_DRBG
+
+Honeypot: Const Q in BSAFE.
+
+RSA warns developers not to use the default Dual_EC_DRBG generator in BSAFE.
+
+[ref link](https://wikileaks.org/hackingteam/emails/emailid/167263)
+
+---
+
+# Why It's Secure?
+
+So in general purpose, we can believe in secp256k1.
+
+---
+
+# What kind of keys is EOS using
+
+secp256k1 and secp256r1
+
+---
+
+# Signature
+
+Here's [an article](http://www.ruanyifeng.com/blog/2011/08/what_is_a_digital_signature.html) talking about it in plain language.
+
+### Before all:
+
+1. Make your public key public.
+2. Make your private key private.
+
+### Make people recognize that's you:
+
+1. Sign stuffs with your private key.
+2. Other people can decrypt it with your public key, but they can not make a fake one under your name.
+
+### And per se,
+
+1. Other people can use public key to sign data.
+2. The one that has the private key can decrypt it.
+
+---
+
+# Signature
+
+## https (off topic)
+
+### 1
+
+Data: `ProChain is good`
+
+Server -> router_1 -> router_2 -> ... router_BAD ... -> router_n -> your computer
+
+router_BAD: change server's data to: `ProChain is good. Free 10,000 EOS click here.`
+
+### 2
+
+Data: `send 1 USD to Alice`
+
+your computer -> router_1 -> router_2 -> ... router_BAD ... -> router_n -> Server
+
+router_BAD: change your data to: `send 100 USD to Bob`
+
+---
+
+# Signature
+
+## EOS Transaction Structure
+
