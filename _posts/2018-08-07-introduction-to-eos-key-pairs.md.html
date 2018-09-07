@@ -133,3 +133,171 @@ router_BAD: change your data to: `send 100 USD to Bob`
 
 ## EOS Transaction Structure
 
+```json
+{  
+    "account":"eosio.token",
+    "name":"transfer",
+    "authorization":[  
+        {  
+            "actor":"agoodaccount",
+            "permission":"active"
+        }
+    ],
+    "data":{  
+        "from":"agoodaccount",
+        "to":"gq3dinztgage",
+        "quantity":"1.0000 EOS"
+    }
+}
+```
+
+---
+
+# Signature
+
+## Raw tx
+
+```json
+{  
+    "from":"agoodaccount",
+    "to":"gq3dinztgage",
+    "quantity":"1.0000 EOS"
+}
+```
+
+## Pack it!
+
+```
+a4f38c5b390282247889000000000100a6823403ea3055000000572d3
+ccdcd01104260d33d364dc300000000a8ed323241104260d33d364dc3
+204260d33d364dc31027000000000000044a554e474c4500205465737
+4206279207368616e676a696e67202e20203230313830393033303032
+00
+```
+
+---
+
+# Signature
+
+## Packed tx
+
+```
+a4f38c5b390282247889000000000100a6823403ea3055000000572d3
+ccdcd01104260d33d364dc300000000a8ed323241104260d33d364dc3
+204260d33d364dc31027000000000000044a554e474c4500205465737
+4206279207368616e676a696e67202e20203230313830393033303032
+00
+```
+
+## Sign it!
+
+```
+SIG_K1_KdRNkKSDNFUb7gU45UZcySykeGRGp4ESzEZj4pyJwWsuDVkRcH
+jREViyF1qQmci8981zib3zGebD64YAXgsNQkzAa7jftK
+```
+
+## Compress it!
+
+Or not.
+
+---
+
+# Signature
+
+## Signed tx
+
+```json
+{
+    "signatures": [
+        "SIG_K1_KdRNkKSDNFUb7gU45UZcySykeGRGp4ESzEZj4pyJwWsuDVkRcHjREViyF1qQmci8981zib3zGebD64YAXgsNQkzAa7jftK"
+    ],
+    "compression": "none",
+    "packed_context_free_data": "",
+    "packed_trx": "a4f38c5b390282247889000000000100a6823403ea3055000000572d3ccdcd01104260d33d364dc300000000a8ed323241104260d33d364dc3204260d33d364dc31027000000000000044a554e474c45002054657374206279207368616e676a696e67202e2020323031383039303330303200"
+}
+```
+
+## Finally, push it.
+
+`POST https://yourdomainandport/v1/chain/push_transaction`
+
+---
+
+class: middle, center
+
+# Tech Details
+
+---
+
+# Generate a Private Key
+
+```swift
+func wifStringPureSwift(enclave: SecureEnclave) -> String {
+    let size_of_data_to_hash = count + 1
+    let size_of_hash_bytes = 4
+    var data: Array<UInt8> = Array(repeating: UInt8(0), count: size_of_data_to_hash+size_of_hash_bytes)
+    data[0] = UInt8(0x80)
+    let bytes = [UInt8](self)
+    for i in 1..<size_of_data_to_hash {
+        data[i] = bytes[i-1]
+    }
+    var digest = Data(bytes: data, count: size_of_data_to_hash)
+    digest = digest.sha256().sha256()
+    for i in 0..<size_of_hash_bytes {
+        data[size_of_data_to_hash+i] = ([UInt8](digest))[i]
+    }
+    let base58 = Data(bytes: data, count: size_of_data_to_hash+size_of_hash_bytes).base58EncodedData()
+    return "PVT_\(enclave.rawValue)_\(String(data: base58, encoding: .ascii)!)"
+}
+```
+
+---
+
+# And the Public Key
+
+```swift
+uECC_compute_public_key([UInt8](privateKey.data), &publicBytes, curve)
+uECC_compress(&publicBytes, &compressedPublicBytes, curve)
+```
+
+```swift
+let hash = RMD(&bytes, 33)
+for i in 0..<size_of_hash_bytes {
+    data[size_of_data_to_hash+i] = hash![i]
+}
+let base58 = Data(bytes: data, count: size_of_data_to_hash+size_of_hash_bytes).base58EncodedData()
+```
+
+---
+
+# Sign
+
+```c    
+deR[0] = (uint8_t)(0x02+(recid&1));
+
+uECC_vli_nativeToBytes(deR+1, curve->num_bytes, x);
+uECC_decompress(deR, coR, curve);
+
+uECC_vli_bytesToNative(Rx, coR, curve->num_bytes);
+uECC_vli_bytesToNative(Ry, coR+curve->num_bytes, curve->num_bytes);
+
+EccPoint_mult(R, R, s, 0, uECC_vli_numBits(s, BITS_TO_WORDS(curve->num_n_bits)), curve);
+EccPoint_mult(sum, curve->G, e, 0, uECC_vli_numBits(e, BITS_TO_WORDS(curve->num_n_bits)), curve);
+EccPoint_add(sumx, sumy, Rx, Ry, curve);
+
+uECC_vli_nativeToBytes(comp_pk, curve->num_bytes, sumx);
+uECC_vli_nativeToBytes(comp_pk+curve->num_bytes, curve->num_bytes, sumy);
+
+if (comp_char(public_key, comp_pk, curve->num_bytes*2)) {
+    return recid;
+}
+```
+
+---
+
+# Conclusion
+
+1. What are key pairs, what are elliptic curves?
+2. Why it's secure, and what is not secure?
+3. What kind of keys is EOS using, K1 or R1?
+4. Signature of Transacions (Step 1,2,3...)
